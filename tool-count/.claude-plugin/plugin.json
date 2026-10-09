@@ -1,0 +1,6 @@
+{
+  "name": "tool-count",
+  "version": "0.1.0",
+  "description": "Shows a pane that counts how often each tool was used",
+  "author": { "name": "Felix" }
+}
