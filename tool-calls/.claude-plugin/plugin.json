@@ -1,0 +1,7 @@
+{
+  "name": "tool-calls",
+  "version": "0.3.0",
+  "description": "Counts how often each tool and skill was used, in session state",
+  "author": { "name": "Felix" },
+  "types": "./types/index.d.ts"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "sidebar",
+  "version": "0.1.0",
+  "description": "Pane that shows git-status above tool-calls",
+  "author": { "name": "Felix" },
+  "types": "./types/index.d.ts"
+}
