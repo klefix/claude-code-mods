@@ -19,6 +19,7 @@ async function readKey($) {
 
 async function askJev($, state, questions) {
   const apiKey = await readKey($)
+  await $.fs.write($.plugin.root + '/.debug/last-request.json', JSON.stringify({ state, questions }, null, 2))
   const request = $.http.fetch('https://ai-gateway.vercel.sh/v1/evaluate', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
