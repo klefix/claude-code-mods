@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { lastExchange, toolVerdict } from './hooks/judge.js'
+import { lastExchange, toolVerdict, withStepText } from './hooks/judge.js'
 
 const yes = (p: number) => ({ type: 'boolean', probability: p })
 
@@ -37,4 +37,11 @@ test('finds the request, the proposal before it and this turn after it', () => {
     assistantProposal: 'Findings 1 and 2',
     assistantThisTurn: 'I detect implementation intent',
   })
+})
+
+test('adds the text of the response that holds the tool call', () => {
+  const exchange = { userRequest: 'go', assistantProposal: 'plan', assistantThisTurn: 'earlier' }
+  expect(withStepText(exchange, 'I detect implementation intent').assistantThisTurn).toBe('earlier\nI detect implementation intent')
+  expect(withStepText(exchange, 'earlier')).toBe(exchange)
+  expect(withStepText(exchange, '  ')).toBe(exchange)
 })

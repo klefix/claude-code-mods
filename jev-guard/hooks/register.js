@@ -1,10 +1,12 @@
-import { PROMPT_QUESTIONS, TOOL_QUESTIONS, VAGUE_MIN, lastExchange, toolCallState, toolVerdict } from './judge.js'
+import { PROMPT_QUESTIONS, QUESTION_MIN, TOOL_QUESTIONS, VAGUE_MIN, lastExchange, toolCallState, toolVerdict, withStepText } from './judge.js'
 
 const GUARDED = ['Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'Bash']
 const USER_ORIGINS = ['composer', 'bridge', 'sdk', 'slack-ping']
 const JEV_TIMEOUT_MS = 5000
 const PROCEED = 'Proceed as written'
 const CANCEL = 'Cancel prompt'
+
+let stepText = ''
 
 function report($, text) {
   $.ui.log('jev-guard: ' + text)
@@ -42,7 +44,7 @@ export function register(on) {
     const { assistantProposal } = lastExchange(await $.session.messages())
     const answers = await askJev($, { userRequest: e.text, assistantProposal }, PROMPT_QUESTIONS)
     const vague = answers.vague.probability
-    if (vague < VAGUE_MIN) return next(e)
+    if (vague < VAGUE_MIN || answers.question.probability >= QUESTION_MIN) return next(e)
     let answer
     try {
       answer = await $.ui.ask(`Jev: this request may leave a choice open (${vague.toFixed(2)}). Type the choice under Other, or pick:`, {
@@ -71,9 +73,22 @@ export function register(on) {
     return { drop: reason }
   })
 
+  on('turn.step', async function* ($, e, next) {
+    if (e.agentId) return yield* next(e)
+    stepText = ''
+    const stream = next(e)
+    let item = await stream.next()
+    while (!item.done) {
+      if (item.value.kind === 'text') stepText += item.value.text
+      yield item.value
+      item = await stream.next()
+    }
+    return item.value
+  })
+
   on('tool.call', async ($, e, next) => {
     if (!GUARDED.includes(e.tool)) return next(e)
-    const exchange = lastExchange(await $.session.messages())
+    const exchange = withStepText(lastExchange(await $.session.messages()), e.agentId ? '' : stepText)
     let currentFile
     if (e.tool === 'Write') currentFile = await $.fs.read(e.file_path).catch(() => '')
     const answers = await askJev($, toolCallState(exchange, e, currentFile), TOOL_QUESTIONS)

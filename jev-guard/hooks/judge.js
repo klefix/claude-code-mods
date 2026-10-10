@@ -1,4 +1,5 @@
 export const VAGUE_MIN = 0.6
+export const QUESTION_MIN = 0.5
 export const IN_SCOPE_MIN = 0.5
 export const REMOVES_MAX = 0.7
 const MAX_FIELD = 8000
@@ -8,6 +9,10 @@ export const PROMPT_QUESTIONS = {
     type: 'boolean',
     instructions:
       'Does the user request leave a choice open that the user has not made, such as which fix, which option, or what scope?',
+  },
+  question: {
+    type: 'boolean',
+    instructions: 'Is the user asking a question, such as for options or an explanation, rather than asking for a change to be made?',
   },
 }
 
@@ -43,6 +48,13 @@ export function lastExchange(messages) {
     assistantProposal: clip(before?.text ?? ''),
     assistantThisTurn: clip(after.join('\n').trim()),
   }
+}
+
+// The response that holds a tool call is not in $.session.messages() yet
+export function withStepText(exchange, stepText) {
+  const text = stepText.trim()
+  if (!text || exchange.assistantThisTurn.includes(text)) return exchange
+  return { ...exchange, assistantThisTurn: clip([exchange.assistantThisTurn, text].filter(Boolean).join('\n')) }
 }
 
 export function toolCallState(exchange, e, currentFile) {
