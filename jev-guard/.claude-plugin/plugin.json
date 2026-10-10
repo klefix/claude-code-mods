@@ -1,0 +1,6 @@
+{
+  "name": "jev-guard",
+  "version": "0.1.0",
+  "description": "Asks Jev whether a prompt leaves a choice open and whether each edit stays within what the user approved",
+  "author": { "name": "Felix" }
+}
