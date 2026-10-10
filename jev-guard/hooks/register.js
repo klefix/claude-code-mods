@@ -6,6 +6,10 @@ const JEV_TIMEOUT_MS = 5000
 const PROCEED = 'Proceed as written'
 const CANCEL = 'Cancel prompt'
 
+function report($, text) {
+  $.ui.log('jev-guard: ' + text)
+}
+
 async function readKey($) {
   const { exitCode, stdout } = await $.process.run(['sh', '-c', 'cat "$HOME/.config/jev-guard/key"'])
   const key = stdout.trim()
@@ -44,15 +48,27 @@ export function register(on) {
         options: [PROCEED, CANCEL],
         header: 'jev-guard',
       })
-    } catch {
-      return { drop: 'jev-guard blocked this prompt: the clarification dialog was dismissed or could not open' }
+    } catch (err) {
+      const reason = `jev-guard blocked this prompt (vague ${vague.toFixed(2)}): the clarification dialog failed: ${err?.message ?? String(err)}`
+      report($, reason)
+      return { drop: reason }
     }
-    if (answer === CANCEL) return { drop: 'Cancelled by jev-guard clarification' }
+    if (answer === CANCEL) {
+      report($, `prompt cancelled at the clarification dialog (vague ${vague.toFixed(2)})`)
+      return { drop: 'Cancelled by jev-guard clarification' }
+    }
     if (answer === PROCEED) return next(e)
     return next({ ...e, text: e.text + '\n\nClarification: ' + answer })
-  }).catch(($, e, next) =>
-    next.called ? next(e) : { drop: 'jev-guard blocked this prompt because Jev could not be asked: ' + (next.error.message ?? next.error.kind) },
-  )
+  }).catch(($, e, next) => {
+    const error = next.error.message ?? next.error.kind
+    if (next.called) {
+      report($, 'prompt hook failed after passing the prompt on: ' + error)
+      return next(e)
+    }
+    const reason = 'jev-guard blocked this prompt because Jev could not be asked: ' + error
+    report($, reason)
+    return { drop: reason }
+  })
 
   on('tool.call', async ($, e, next) => {
     if (!GUARDED.includes(e.tool)) return next(e)
@@ -61,7 +77,19 @@ export function register(on) {
     if (e.tool === 'Write') currentFile = await $.fs.read(e.file_path).catch(() => '')
     const answers = await askJev($, toolCallState(exchange, e, currentFile), TOOL_QUESTIONS)
     const reason = toolVerdict(e.tool, answers)
-    if (reason) return { deny: reason }
+    if (reason) {
+      report($, `${e.tool} denied: ${reason}`)
+      return { deny: reason }
+    }
     return next(e)
-  }).catch(($, e, next) => (next.called ? next(e) : { deny: 'jev-guard blocked this call because Jev could not be asked: ' + (next.error.message ?? next.error.kind) }))
+  }).catch(($, e, next) => {
+    const error = next.error.message ?? next.error.kind
+    if (next.called) {
+      report($, `${e.tool} hook failed after passing the call on: ${error}`)
+      return next(e)
+    }
+    const reason = 'jev-guard blocked this call because Jev could not be asked: ' + error
+    report($, `${e.tool} denied: ${reason}`)
+    return { deny: reason }
+  })
 }
