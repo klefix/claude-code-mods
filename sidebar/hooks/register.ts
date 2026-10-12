@@ -1,6 +1,8 @@
+import type { ElementConstructor, On, PluginState, TextProps } from 'claude-code'
+
 const PANE = 'sidebar'
 
-function gitLines(Text, summary) {
+function gitLines(Text: ElementConstructor<TextProps>, summary: PluginState['git-status']['summary'] | undefined) {
   if (!summary) {
     return [Text({ dimColor: true, children: ['Waiting for git-status'] })]
   }
@@ -14,7 +16,7 @@ function gitLines(Text, summary) {
   ]
 }
 
-function toolLines(Text, counts) {
+function toolLines(Text: ElementConstructor<TextProps>, counts: PluginState['tool-calls']['counts'] | undefined) {
   const rows = Object.entries(counts?.tools ?? {}).sort((a, b) => b[1] - a[1])
   if (rows.length === 0) {
     return [Text({ dimColor: true, children: ['No tool calls yet'] })]
@@ -26,7 +28,7 @@ function toolLines(Text, counts) {
       continue
     }
     lines.push(Text({ children: ['Skill:'] }))
-    const skillRows = Object.entries(counts.skills).sort((a, b) => b[1] - a[1])
+    const skillRows = Object.entries(counts?.skills ?? {}).sort((a, b) => b[1] - a[1])
     skillRows.forEach(([skill, m], i) => {
       const branch = i === skillRows.length - 1 ? '└ ' : '├ '
       lines.push(Text({ children: [`${branch + skill}: ${m}x`] }))
@@ -35,7 +37,7 @@ function toolLines(Text, counts) {
   return lines
 }
 
-export function register(on) {
+export function register(on: On) {
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'sidebar', description: 'Open the sidebar pane', immediate: true })
     // Opened without user action, so it only shows in terminals 144+ columns wide; /sidebar opens it at any width

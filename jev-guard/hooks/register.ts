@@ -1,6 +1,9 @@
+import type { EngineInterface, On } from 'claude-code'
 import {
+  type Answers,
   lastExchange,
   PROMPT_QUESTIONS,
+  probability,
   QUESTION_MIN,
   TOOL_QUESTIONS,
   toolCallState,
@@ -17,11 +20,11 @@ const CANCEL = 'Cancel prompt'
 
 let stepText = ''
 
-function report($, text) {
+function report($: EngineInterface, text: string) {
   $.ui.log(`jev-guard: ${text}`)
 }
 
-async function readKey($) {
+async function readKey($: EngineInterface) {
   const { exitCode, stdout } = await $.process.run(['sh', '-c', 'cat "$HOME/.config/jev-guard/key"'])
   const key = stdout.trim()
   if (exitCode !== 0 || !key) {
@@ -30,7 +33,7 @@ async function readKey($) {
   return key
 }
 
-async function askJev($, state, questions) {
+async function askJev($: EngineInterface, state: object, questions: object): Promise<Answers> {
   const apiKey = await readKey($)
   await $.fs.write(`${$.plugin.root}/.debug/last-request.json`, JSON.stringify({ state, questions }, null, 2))
   const request = $.http.fetch('https://ai-gateway.vercel.sh/v1/evaluate', {
@@ -45,23 +48,23 @@ async function askJev($, state, questions) {
   if (!res.ok) {
     throw new Error(`Jev HTTP ${res.status}: ${res.text.slice(0, 200)}`)
   }
-  const { answers } = JSON.parse(res.text)
+  const { answers }: { answers: Answers } = JSON.parse(res.text)
   $.ui.log(`jev-guard ${JSON.stringify(answers)}`, { to: 'debug' })
   return answers
 }
 
-export function register(on) {
+export function register(on: On) {
   on('prompt.submit', async ($, e, next) => {
     if (!USER_ORIGINS.includes(e.origin.kind)) {
       return next(e)
     }
     const { assistantProposal } = lastExchange(await $.session.messages())
     const answers = await askJev($, { userRequest: e.text, assistantProposal }, PROMPT_QUESTIONS)
-    const vague = answers.vague.probability
-    if (vague < VAGUE_MIN || answers.question.probability >= QUESTION_MIN) {
+    const vague = probability(answers, 'vague')
+    if (vague < VAGUE_MIN || probability(answers, 'question') >= QUESTION_MIN) {
       return next(e)
     }
-    let answer
+    let answer: string
     try {
       answer = await $.ui.ask(
         `Jev: this request may leave a choice open (${vague.toFixed(2)}). Type the choice under Other, or pick:`,
@@ -71,7 +74,7 @@ export function register(on) {
         },
       )
     } catch (err) {
-      const reason = `jev-guard blocked this prompt (vague ${vague.toFixed(2)}): the clarification dialog failed: ${err?.message ?? String(err)}`
+      const reason = `jev-guard blocked this prompt (vague ${vague.toFixed(2)}): the clarification dialog failed: ${err instanceof Error ? err.message : String(err)}`
       report($, reason)
       return { drop: reason }
     }
@@ -116,7 +119,7 @@ export function register(on) {
       return next(e)
     }
     const exchange = withStepText(lastExchange(await $.session.messages()), e.agentId ? '' : stepText)
-    let currentFile
+    let currentFile: string | undefined
     if (e.tool === 'Write') {
       currentFile = await $.fs.read(e.file_path).catch(() => '')
     }

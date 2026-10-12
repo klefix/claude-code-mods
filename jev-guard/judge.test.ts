@@ -1,3 +1,4 @@
+import type { SessionMessage } from 'claude-code'
 import { expect, test } from 'claude-code/testing'
 import { lastExchange, toolCallState, toolVerdict, withStepText } from './hooks/judge.js'
 
@@ -26,7 +27,7 @@ test('throws when Jev leaves out an answer', () => {
 })
 
 test('finds the request, the proposal before it and this turn after it', () => {
-  const messages = [
+  const messages: SessionMessage[] = [
     { role: 'assistant', text: 'Findings 1 and 2', toolUses: [] },
     { role: 'user', text: 'fix 1 and 2', toolUses: [] },
     { role: 'assistant', text: 'I detect implementation intent', toolUses: [] },
@@ -76,7 +77,7 @@ test('builds the tool call state without the reserved fields', () => {
 test('truncates long tool input', () => {
   const exchange = { userRequest: 'go', assistantProposal: '', assistantThisTurn: '' }
   const state = toolCallState(exchange, { tool: 'Edit', tool_use_id: 't', new_string: 'y'.repeat(9000) }, undefined)
-  expect(state.toolCall.new_string.endsWith('\n[truncated]')).toBe(true)
+  expect(String(state.toolCall.new_string).endsWith('\n[truncated]')).toBe(true)
 })
 
 test('names both failures when an edit is out of scope and removes behavior', () => {

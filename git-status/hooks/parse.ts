@@ -1,5 +1,5 @@
 // Untracked files ("??") count as unstaged
-export function parsePorcelain(stdout) {
+export function parsePorcelain(stdout: string) {
   const lines = stdout.split('\n').filter((line) => line.length > 0)
   let staged = 0
   let unstaged = 0

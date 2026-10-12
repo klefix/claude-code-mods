@@ -1,6 +1,6 @@
 # claude-code-mods
 
-A few [Claude Code mods](https://code.claude.com/docs/en/plugins/mods/overview). A mod is a plugin with a JavaScript hooks module that Claude Code runs on events such as tool calls, prompts and rendering. The mods need Claude Code v2.1.287 or later.
+A few [Claude Code mods](https://code.claude.com/docs/en/plugins/mods/overview). A mod is a plugin with a TypeScript or JavaScript hooks module that Claude Code runs on events such as tool calls, prompts and rendering. The mods need Claude Code v2.1.287 or later.
 
 ## The mods
 
@@ -15,7 +15,7 @@ A few [Claude Code mods](https://code.claude.com/docs/en/plugins/mods/overview).
 
 On each prompt you type, jev-guard asks Jev whether the request leaves a choice open, such as which fix or what scope. If it does, and the prompt is not a question, a dialog asks you to clarify, send the prompt as written, or cancel it.
 
-Before each `Edit`, `Write`, `MultiEdit`, `NotebookEdit` and `Bash` call, jev-guard asks Jev whether the call stays within what you approved and whether it removes behavior you did not ask to remove. It denies the call if the in-scope rating is below 0.5 or the removes-behavior rating is 0.7 or more. Claude then sees the reason and is told to ask you. A `Bash` command that Jev rates as read-only is allowed without those checks. The thresholds are at the top of `jev-guard/hooks/judge.js`.
+Before each `Edit`, `Write`, `MultiEdit`, `NotebookEdit` and `Bash` call, jev-guard asks Jev whether the call stays within what you approved and whether it removes behavior you did not ask to remove. It denies the call if the in-scope rating is below 0.5 or the removes-behavior rating is 0.7 or more. Claude then sees the reason and is told to ask you. A `Bash` command that Jev rates as read-only is allowed without those checks. The thresholds are at the top of `jev-guard/hooks/judge.ts`.
 
 Things to know before you enable jev-guard:
 
