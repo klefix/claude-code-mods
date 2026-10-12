@@ -12,7 +12,8 @@ export const PROMPT_QUESTIONS = {
   },
   question: {
     type: 'boolean',
-    instructions: 'Is the user asking a question, such as for options or an explanation, rather than asking for a change to be made?',
+    instructions:
+      'Is the user asking a question, such as for options or an explanation, rather than asking for a change to be made?',
   },
 }
 
@@ -33,16 +34,23 @@ export const TOOL_QUESTIONS = {
 }
 
 function clip(text) {
-  if (typeof text !== 'string') return text
-  return text.length > MAX_FIELD ? text.slice(0, MAX_FIELD) + '\n[truncated]' : text
+  if (typeof text !== 'string') {
+    return text
+  }
+  return text.length > MAX_FIELD ? `${text.slice(0, MAX_FIELD)}\n[truncated]` : text
 }
 
 // Tool results arrive as user messages with empty text
 export function lastExchange(messages) {
   const i = messages.findLastIndex((m) => m.role === 'user' && m.text.trim() !== '')
-  if (i === -1) return { userRequest: '', assistantProposal: '', assistantThisTurn: '' }
+  if (i === -1) {
+    return { userRequest: '', assistantProposal: '', assistantThisTurn: '' }
+  }
   const before = messages.slice(0, i).findLast((m) => m.role === 'assistant' && m.text.trim() !== '')
-  const after = messages.slice(i + 1).filter((m) => m.role === 'assistant').map((m) => m.text)
+  const after = messages
+    .slice(i + 1)
+    .filter((m) => m.role === 'assistant')
+    .map((m) => m.text)
   return {
     userRequest: clip(messages[i].text),
     assistantProposal: clip(before?.text ?? ''),
@@ -53,7 +61,9 @@ export function lastExchange(messages) {
 // The response that holds a tool call is not in $.session.messages() yet
 export function withStepText(exchange, stepText) {
   const text = stepText.trim()
-  if (!text || exchange.assistantThisTurn.includes(text)) return exchange
+  if (!text || exchange.assistantThisTurn.includes(text)) {
+    return exchange
+  }
   return { ...exchange, assistantThisTurn: clip([exchange.assistantThisTurn, text].filter(Boolean).join('\n')) }
 }
 
@@ -61,24 +71,36 @@ export function toolCallState(exchange, e, currentFile) {
   const { tool, tool_use_id, agentId, ...input } = e
   const clipped = Object.fromEntries(Object.entries(input).map(([k, v]) => [k, clip(v)]))
   const state = { ...exchange, toolCall: { tool, ...clipped } }
-  if (currentFile !== undefined) state.currentFileContent = clip(currentFile)
+  if (currentFile !== undefined) {
+    state.currentFileContent = clip(currentFile)
+  }
   return state
 }
 
 function probability(answers, name) {
   const p = answers?.[name]?.probability
-  if (typeof p !== 'number') throw new Error('Jev answer missing: ' + name)
+  if (typeof p !== 'number') {
+    throw new Error(`Jev answer missing: ${name}`)
+  }
   return p
 }
 
 export function toolVerdict(tool, answers) {
   const writes = probability(answers, 'writes')
-  if (tool === 'Bash' && writes < 0.5) return null
+  if (tool === 'Bash' && writes < 0.5) {
+    return null
+  }
   const inScope = probability(answers, 'inScope')
   const removes = probability(answers, 'removes')
   const fails = []
-  if (inScope < IN_SCOPE_MIN) fails.push(`in-scope ${inScope.toFixed(2)} (needs ${IN_SCOPE_MIN} or more)`)
-  if (removes >= REMOVES_MAX) fails.push(`removes-behavior ${removes.toFixed(2)} (needs below ${REMOVES_MAX})`)
-  if (fails.length === 0) return null
-  return 'jev-guard blocked this call. Jev rated ' + fails.join(' and ') + '. Ask the user before trying again.'
+  if (inScope < IN_SCOPE_MIN) {
+    fails.push(`in-scope ${inScope.toFixed(2)} (needs ${IN_SCOPE_MIN} or more)`)
+  }
+  if (removes >= REMOVES_MAX) {
+    fails.push(`removes-behavior ${removes.toFixed(2)} (needs below ${REMOVES_MAX})`)
+  }
+  if (fails.length === 0) {
+    return null
+  }
+  return `jev-guard blocked this call. Jev rated ${fails.join(' and ')}. Ask the user before trying again.`
 }

@@ -13,21 +13,23 @@ export function register(on) {
   on('session.start', async ($, e, next) => {
     await refresh($)
     return next(e)
-  }).catch(($, e, next) => next(e))
+  }).catch((_$, e, next) => next(e))
 
   on('tool.call', async ($, e, next) => {
     const result = await next(e)
-    if (CHANGES_FILES.includes(e.tool)) refresh($).catch(() => {})
+    if (CHANGES_FILES.includes(e.tool)) {
+      refresh($).catch(() => {})
+    }
     return result
-  }).catch(($, e, next) => next(e))
+  }).catch((_$, e, next) => next(e))
 
   on('prompt.submit', async ($, e, next) => {
     refresh($).catch(() => {})
     return next(e)
-  }).catch(($, e, next) => next(e))
+  }).catch((_$, e, next) => next(e))
 
   on('classic.CwdChanged', async ($, e, next) => {
     refresh($).catch(() => {})
     return next(e)
-  }).catch(($, e, next) => next(e))
+  }).catch((_$, e, next) => next(e))
 }

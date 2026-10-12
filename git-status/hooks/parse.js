@@ -6,8 +6,12 @@ export function parsePorcelain(stdout) {
   for (const line of lines) {
     const x = line[0]
     const y = line[1]
-    if (x !== ' ' && x !== '?') staged++
-    if (y !== ' ') unstaged++
+    if (x !== ' ' && x !== '?') {
+      staged++
+    }
+    if (y !== ' ') {
+      unstaged++
+    }
   }
   return { isRepo: true, changed: lines.length, staged, unstaged }
 }

@@ -10,13 +10,15 @@ function fakeJev(on: any, { probabilities, messages = [], status = 200, dialogAn
   const asked: any[] = []
   mock.clock(on)
   on('session.messages', async () => ({ value: messages }))
-  on('process.run', async () => ({ value: { exitCode: 0, stdout: 'test-key\n', stderr: '', isStdoutTruncated: false } }))
+  on('process.run', async () => ({
+    value: { exitCode: 0, stdout: 'test-key\n', stderr: '', isStdoutTruncated: false },
+  }))
   on('fs.write', async () => ({ value: undefined }))
-  on('ui.log', async ($: any, e: any) => {
+  on('ui.log', async (_$: any, e: any) => {
     logs.push(e.text)
     return { value: undefined }
   })
-  on('http.fetch', async ($: any, e: any) => {
+  on('http.fetch', async (_$: any, e: any) => {
     const body = JSON.parse(e.init.body)
     requests.push(body)
     const answers = Object.fromEntries(
@@ -24,11 +26,11 @@ function fakeJev(on: any, { probabilities, messages = [], status = 200, dialogAn
     )
     return { value: { status, ok: status < 300, headers: {}, text: JSON.stringify({ answers }) } }
   })
-  on('prompt.submit', async ($: any, e: any) => {
+  on('prompt.submit', async (_$: any, e: any) => {
     entered.push(e)
     return { text: e.text, context: e.context }
   })
-  on('tool.call', async ($: any, e: any) => {
+  on('tool.call', async (_$: any, e: any) => {
     if (e.tool === 'AskUserQuestion') {
       asked.push(e)
       const question = e.questions[0].question
@@ -67,7 +69,13 @@ test('adds the clarification typed in the dialog to a vague request', async ($: 
 test('denies an out-of-scope edit and says so in the transcript', async ($: any, on: any) => {
   const messages = [{ role: 'user', text: 'explain the login flow', toolUses: [] }]
   const jev = fakeJev(on, { probabilities: { writes: 1, inScope: 0.1, removes: 0 }, messages })
-  const result = await $.tool.call({ tool: 'Edit', file_path: 'a.ts', old_string: 'a', new_string: 'b', replace_all: false })
+  const result = await $.tool.call({
+    tool: 'Edit',
+    file_path: 'a.ts',
+    old_string: 'a',
+    new_string: 'b',
+    replace_all: false,
+  })
   expect(result.deny).toContain('in-scope 0.10')
   expect(jev.ran).toHaveLength(0)
   expect(jev.logs.some((line) => line.includes('Edit denied'))).toBe(true)

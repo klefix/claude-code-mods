@@ -41,7 +41,9 @@ test('finds the request, the proposal before it and this turn after it', () => {
 
 test('adds the text of the response that holds the tool call', () => {
   const exchange = { userRequest: 'go', assistantProposal: 'plan', assistantThisTurn: 'earlier' }
-  expect(withStepText(exchange, 'I detect implementation intent').assistantThisTurn).toBe('earlier\nI detect implementation intent')
+  expect(withStepText(exchange, 'I detect implementation intent').assistantThisTurn).toBe(
+    'earlier\nI detect implementation intent',
+  )
   expect(withStepText(exchange, 'earlier')).toBe(exchange)
   expect(withStepText(exchange, '  ')).toBe(exchange)
 })
@@ -89,5 +91,7 @@ test('checks scope for a Bash command that writes', () => {
 
 test('treats the thresholds as allowed at the minimum and blocked at the maximum', () => {
   expect(toolVerdict('Edit', { writes: yes(1), inScope: yes(0.5), removes: yes(0.69) })).toBeNull()
-  expect(toolVerdict('Edit', { writes: yes(1), inScope: yes(0.9), removes: yes(0.7) })).toContain('removes-behavior 0.70')
+  expect(toolVerdict('Edit', { writes: yes(1), inScope: yes(0.9), removes: yes(0.7) })).toContain(
+    'removes-behavior 0.70',
+  )
 })

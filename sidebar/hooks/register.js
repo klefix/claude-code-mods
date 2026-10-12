@@ -1,29 +1,35 @@
 const PANE = 'sidebar'
 
 function gitLines(Text, summary) {
-  if (!summary) return [Text({ dimColor: true, children: ['Waiting for git-status'] })]
-  if (!summary.isRepo) return [Text({ dimColor: true, children: ['Not a git repository'] })]
+  if (!summary) {
+    return [Text({ dimColor: true, children: ['Waiting for git-status'] })]
+  }
+  if (!summary.isRepo) {
+    return [Text({ dimColor: true, children: ['Not a git repository'] })]
+  }
   return [
-    Text({ children: ['Changed: ' + summary.changed] }),
-    Text({ children: ['Staged: ' + summary.staged] }),
-    Text({ children: ['Unstaged: ' + summary.unstaged] }),
+    Text({ children: [`Changed: ${summary.changed}`] }),
+    Text({ children: [`Staged: ${summary.staged}`] }),
+    Text({ children: [`Unstaged: ${summary.unstaged}`] }),
   ]
 }
 
 function toolLines(Text, counts) {
   const rows = Object.entries(counts?.tools ?? {}).sort((a, b) => b[1] - a[1])
-  if (rows.length === 0) return [Text({ dimColor: true, children: ['No tool calls yet'] })]
+  if (rows.length === 0) {
+    return [Text({ dimColor: true, children: ['No tool calls yet'] })]
+  }
   const lines = []
   for (const [tool, n] of rows) {
     if (tool !== 'Skill') {
-      lines.push(Text({ children: [tool + ': ' + n + 'x'] }))
+      lines.push(Text({ children: [`${tool}: ${n}x`] }))
       continue
     }
     lines.push(Text({ children: ['Skill:'] }))
     const skillRows = Object.entries(counts.skills).sort((a, b) => b[1] - a[1])
     skillRows.forEach(([skill, m], i) => {
       const branch = i === skillRows.length - 1 ? '└ ' : '├ '
-      lines.push(Text({ children: [branch + skill + ': ' + m + 'x'] }))
+      lines.push(Text({ children: [`${branch + skill}: ${m}x`] }))
     })
   }
   return lines
@@ -44,16 +50,24 @@ export function register(on) {
 
   // A $.state.get during ui.render subscribes the pane, so writes by the other mods redraw it
   on('ui.render', { component: 'Pane' }, async ($, e, next) => {
-    if (e.requestId !== PANE) return next(e)
+    if (e.requestId !== PANE) {
+      return next(e)
+    }
     const { Box, Text } = $.ui.resolve(e)
     const { value: summary } = await $.state.get({ plugin: 'git-status', key: 'summary' })
     const { value: counts } = await $.state.get({ plugin: 'tool-calls', key: 'counts' })
     return Box({
       flexDirection: 'column',
       children: [
-        Box({ flexDirection: 'column', children: [Text({ bold: true, children: ['Git'] }), ...gitLines(Text, summary)] }),
+        Box({
+          flexDirection: 'column',
+          children: [Text({ bold: true, children: ['Git'] }), ...gitLines(Text, summary)],
+        }),
         Text({ dimColor: true, children: ['─'.repeat(e.props?.bodyColumns ?? 20)] }),
-        Box({ flexDirection: 'column', children: [Text({ bold: true, children: ['Tools'] }), ...toolLines(Text, counts)] }),
+        Box({
+          flexDirection: 'column',
+          children: [Text({ bold: true, children: ['Tools'] }), ...toolLines(Text, counts)],
+        }),
       ],
     })
   })

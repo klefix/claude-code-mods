@@ -10,9 +10,11 @@ function bump(map, name) {
 export function register(on) {
   // session.start does not fire after /clear
   on('classic.SessionStart', async ($, e, next) => {
-    if (e.source === 'clear') await update($, counts, () => EMPTY)
+    if (e.source === 'clear') {
+      await update($, counts, () => EMPTY)
+    }
     return next(e)
-  }).catch(($, e, next) => next(e))
+  }).catch((_$, e, next) => next(e))
 
   on('tool.call', async ($, e, next) => {
     await update($, counts, (c) => ({
@@ -20,5 +22,5 @@ export function register(on) {
       skills: e.tool === 'Skill' && e.skill ? bump(c.skills, e.skill) : c.skills,
     }))
     return next(e)
-  }).catch(($, e, next) => next(e))
+  }).catch((_$, e, next) => next(e))
 }
